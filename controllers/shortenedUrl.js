@@ -8,17 +8,26 @@ const Status = require("../constants/status");
 
 const createShortenedUrl = async (req, res) => {
   try {
-    let { url, password } = req.body;
+    let { id, url, password } = req.body;
 
     if (password) {
       password = await bcrypt.hash(password, 10);
     }
 
-    const id = await ShortenedUrlService.createShortenedUrl({ url, password });
+    const idShortened = await ShortenedUrlService.createShortenedUrl({
+      id,
+      url,
+      password,
+    });
     return res
       .status(Status.CREATED)
-      .json(apiResponse(Status.CREATED, Message.CREATED, { id }));
+      .json(apiResponse(Status.CREATED, Message.CREATED, { id: idShortened }));
   } catch (error) {
+    if (error.message === Message.CONFLICT) {
+      return res
+        .status(Status.CONFLICT)
+        .json(apiResponse(Status.CONFLICT, Message.CONFLICT));
+    }
     logger.error(error);
     return res
       .status(Status.INTERNAL_SERVER_ERROR)
@@ -81,7 +90,73 @@ const getShortenedUrl = async (req, res) => {
   }
 };
 
+const hasPassword = async (req, res) => {
+  try {
+    const { id } = req.body;
+    const shortenedUrl = await ShortenedUrlService.getShortenedUrl({
+      id,
+    });
+
+    if (!shortenedUrl) {
+      return res
+        .status(Status.NOT_FOUND)
+        .json(apiResponse(Status.NOT_FOUND, Message.NOT_FOUND));
+    }
+
+    if (!shortenedUrl.password) {
+      return res.status(Status.OK).json(
+        apiResponse(Status.OK, Message.OK, {
+          hasPassword: false,
+        })
+      );
+    }
+
+    return res.status(Status.OK).json(
+      apiResponse(Status.OK, Message.OK, {
+        hasPassword: true,
+      })
+    );
+  } catch (error) {
+    logger.error(error);
+    return res
+      .status(Status.INTERNAL_SERVER_ERROR)
+      .json(
+        apiResponse(Status.INTERNAL_SERVER_ERROR, Message.INTERNAL_SERVER_ERROR)
+      );
+  }
+};
+
+const isIdExist = async (req, res) => {
+  try {
+    const { id } = req.body;
+    const shortenedUrl = await ShortenedUrlService.getShortenedUrl({
+      id,
+    });
+
+    if (!shortenedUrl) {
+      return res.status(Status.OK).json(
+        apiResponse(Status.OK, Message.OK, {
+          isIdExist: false,
+        })
+      );
+    }
+
+    return res
+      .status(Status.OK)
+      .json(apiResponse(Status.OK, Message.OK, { isIdExist: true }));
+  } catch (error) {
+    logger.error(error);
+    return res
+      .status(Status.INTERNAL_SERVER_ERROR)
+      .json(
+        apiResponse(Status.INTERNAL_SERVER_ERROR, Message.INTERNAL_SERVER_ERROR)
+      );
+  }
+};
+
 module.exports = {
   createShortenedUrl,
   getShortenedUrl,
+  hasPassword,
+  isIdExist,
 };
