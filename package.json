@@ -4,7 +4,8 @@
   "description": "api of url-shortener",
   "main": "app.js",
   "scripts": {
-    "start": "nodemon app.js"
+    "start": "node app.js",
+    "dev": "nodemon app.js"
   },
   "author": "arahiko-ayami",
   "license": "MIT",
