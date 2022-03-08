@@ -90,8 +90,14 @@ const getShortenedUrl = async (req, res) => {
   }
 };
 
-const hasPassword = async (req, res) => {
+const getidInfo = async (req, res) => {
   try {
+    if (!req.body || !req.body.id) {
+      return res
+        .status(Status.BAD_REQUEST)
+        .json(apiResponse(Status.BAD_REQUEST, Message.BAD_REQUEST));
+    }
+
     const { id } = req.body;
     const shortenedUrl = await ShortenedUrlService.getShortenedUrl({
       id,
@@ -103,47 +109,12 @@ const hasPassword = async (req, res) => {
         .json(apiResponse(Status.NOT_FOUND, Message.NOT_FOUND));
     }
 
-    if (!shortenedUrl.password) {
-      return res.status(Status.OK).json(
-        apiResponse(Status.OK, Message.OK, {
-          hasPassword: false,
-        })
-      );
-    }
-
     return res.status(Status.OK).json(
       apiResponse(Status.OK, Message.OK, {
-        hasPassword: true,
+        id: shortenedUrl._id,
+        hasPassword: !!shortenedUrl.password,
       })
     );
-  } catch (error) {
-    logger.error(error);
-    return res
-      .status(Status.INTERNAL_SERVER_ERROR)
-      .json(
-        apiResponse(Status.INTERNAL_SERVER_ERROR, Message.INTERNAL_SERVER_ERROR)
-      );
-  }
-};
-
-const isIdExist = async (req, res) => {
-  try {
-    const { id } = req.body;
-    const shortenedUrl = await ShortenedUrlService.getShortenedUrl({
-      id,
-    });
-
-    if (!shortenedUrl) {
-      return res.status(Status.OK).json(
-        apiResponse(Status.OK, Message.OK, {
-          isIdExist: false,
-        })
-      );
-    }
-
-    return res
-      .status(Status.OK)
-      .json(apiResponse(Status.OK, Message.OK, { isIdExist: true }));
   } catch (error) {
     logger.error(error);
     return res
@@ -157,6 +128,5 @@ const isIdExist = async (req, res) => {
 module.exports = {
   createShortenedUrl,
   getShortenedUrl,
-  hasPassword,
-  isIdExist,
+  getidInfo,
 };
